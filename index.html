@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AlphaWallet</title>
+<style>
+  :root{
+    --blue-1:#0b3a82;
+    --blue-2:#0765d0;
+    --muted:#6b7280;
+    --bg:#f5f7fb;
+    --card:#ffffff;
+    --pill:#eef6ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,Roboto,Arial;background:var(--bg);color:#071428;-webkit-font-smoothing:antialiased}
+  header{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brandIcon{width:44px;height:44px;border-radius:8px;background:#0f4aa8;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff}
+  .brandText{font-weight:700;font-size:1.05rem}
+  .supportShort{font-size:0.9rem;opacity:0.95}
+
+  main{max-width:1100px;margin:18px auto;padding:12px}
+
+  /* auth area */
+  .authCard{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 18px 40px rgba(10,16,40,0.08);max-width:720px;margin:30px auto}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{flex:1;padding:10px;border-radius:8px;text-align:center;cursor:pointer;border:1px solid #eef6ff;background:#fff;font-weight:700}
+  .tab.active{background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff}
+  input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e9f0ff;margin:8px 0;background:#fbfdff}
+  .btn{display:inline-block;padding:10px 14px;border-radius:8px;border:none;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;font-weight:800;cursor:pointer}
+  .btn.secondary{background:#fff;color:var(--blue-2);border:1px solid #e6f0ff}
+  .muted{color:var(--muted);font-size:0.95rem}
+  .photoPreview{width:72px;height:72px;border-radius:8px;background:#f6f9ff;border:1px dashed #e6f0ff;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;color:var(--muted)}
+
+  /* dashboard */
+  .dashWrap{display:flex;flex-direction:column;gap:14px}
+  .topRow{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .profile{display:flex;align-items:center;gap:12px}
+  .profilePic{width:64px;height:64px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .balances{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .balanceCard{background:#fff;border-radius:10px;padding:12px;min-width:120px;box-shadow:0 12px 30px rgba(6,12,28,0.06)}
+  .tileGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:8px}
+  @media(min-width:900px){ .tileGrid{grid-template-columns:repeat(3,1fr)} }
+  .tile{background:linear-gradient(180deg,#fff,#fbfdff);padding:16px;border-radius:12px;box-shadow:0 12px 30px rgba(8,20,50,0.06);cursor:pointer;transition:transform .12s ease;display:flex;flex-direction:column;gap:8px}
+  .tile:hover{transform:translateY(-6px)}
+  .tileIcon{width:48px;height:48px;border-radius:10px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900}
+
+  /* virtual card under tiles */
+  .cardWrap{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+  .virtualCard{width:100%;max-width:720px;border-radius:12px;padding:16px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;box-shadow:0 26px 60px rgba(3,10,29,0.12)}
+  .cardRow{display:flex;justify-content:space-between;align-items:center}
+
+  /* transactions */
+  .txList{background:#fff;border-radius:12px;padding:12px;box-shadow:0 12px 30px rgba(6,12,28,0.05);max-width:720px}
+  .txItem{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #eef6ff}
+
+  /* admin */
+  table{width:100%;border-collapse:collapse}
+  table th, table td{padding:8px;border:1px solid #eef6ff;text-align:left;font-size:0.95rem}
+
+  /* pages / back link */
+  .page{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 12px 30px rgba(6,12,28,0.05);margin-top:12px}
+
+  /* alert bar (top) - corporate style */
+  .alertBar{position:fixed;left:50%;transform:translateX(-50%);top:12px;z-index:999;width:calc(100% - 28px);max-width:920px;border-radius:8px;padding:12px 14px;background:linear-gradient(90deg,var(--blue-1),var(--blue-2));color:#fff;box-shadow:0 14px 36px rgba(3,10,29,0.14);display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .alertContent{display:flex;gap:12px;align-items:center}
+  .alertText{font-weight:700}
+  .alertClose{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.18);padding:8px 10px;border-radius:8px;cursor:pointer}
+
+  footer{margin-top:22px;padding:12px;text-align:center;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brandIcon">AW</div>
+    <div>
+      <div class="brandText">AlphaWallet</div>
+      <div class="muted" style="font-size:0.85rem">Secure • Smart • Simple</div>
+    </div>
+  </div>
+  <div class="supportShort">
+    <div style="font-weight:700">Support</div>
+    <div style="font-size:0.85rem">✉ alphawalllet@gmail.com &nbsp; • &nbsp; 💬 WhatsApp: +1 (647) 589-7303</div>
+  </div>
+</header>
+
+<main>
+  <!-- AUTH CARD -->
+  <section id="authView" class="authCard" aria-label="Authentication">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:260px">
+        <div class="tabs">
+          <div id="tabLogin" class="tab active">Login</div>
+          <div id="tabRegister" class="tab">Register</div>
+        </div>
+
+        <div id="loginBox">
+          <h2 style="margin:6px 0">Welcome back</h2>
+          <input id="loginEmail" type="email" placeholder="Email" autocomplete="username" />
+          <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="btnLogin" class="btn" style="flex:1">Login</button>
+            <button id="btnGuest" class="btn secondary" style="width:110px">Guest</button>
+          </div>
+          <p class="muted" style="margin-top:8px">Don't have an account? <a href="#" id="showRegister">Create account</a></p>
+        </div>
+
+        <div id="registerBox" style="display:none">
+          <h2 style="margin:6px 0">Create account</h2>
+          <input id="regName" type="text" placeholder="Full name" />
+          <input id="regEmail" type="email" placeholder="Email" />
+          <input id="regPassword" type="password" placeholder="Password" />
+          <label class="muted">Date of birth</label>
+          <input id="regDOB" type="date" />
+          <label class="muted">Gender</label>
+          <select id="regGender"><option value="">Select</option><option>Female</option><option>Male</option><option>Other</option></select>
+          <input id="regAddress" type="text" placeholder="House address" />
+          <div style="display:flex;gap:8px">
+            <input id="regCountry" type="text" placeholder="Country" />
+            <input id="regState" type="text" placeholder="State" />
+          </div>
+          <label class="muted">Upload profile photo</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="photoPreview" id="photoPreview">No photo</div>
+            <input id="regPhoto" type="file" accept="image/*" />
+          </div>
+          <label class="muted">Account tier</label>
+          <select id="regTier"><option value="1">Tier 1 — Basic</option><option value="2">Tier 2 — Verified</option><option value="3">Tier 3 — Full</option></select>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="btnRegister" class="btn" style="flex:1">Create account</button>
+            <button id="showLogin" class="btn secondary" style="width:110px">Back</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:260px">
+        <div style="background:#f8fbff;padding:12px;border-radius:10px">
+          <div style="font-weight:700;margin-bottom:6px">Customer Support</div>
+          <div class="muted">Email: <strong>alphawalllet@gmail.com</strong></div>
+          <div class="muted" style="margin-top:6px">WhatsApp: <strong>+1 (647) 589-7303</strong></div>
+          <div class="muted" style="margin-top:10px;font-size:0.9rem">Support available on WhatsApp only (Canada number)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD (hidden by default) -->
+  <section id="dashboardView" style="display:none" aria-label="Dashboard">
+    <div class="dashWrap">
+      <div class="topRow">
+        <div class="profile">
+          <div class="profilePic" id="profilePic">U</div>
+          <div>
+            <div id="welcomeText" style="font-weight:800">Welcome, User</div>
+            <div id="welcomeEmail" class="muted">email@example.com</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Account Tier</div>
+          <div style="margin-top:6px"><span id="displayTier" style="display:inline-block;padding:6px 10px;border-radius:999px;background:var(--pill);color:var(--blue-2);font-weight:700">1</span></div>
+        </div>
+      </div>
+
+      <div class="balances" style="margin-top:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="balanceCard"><div class="muted">USD</div><div id="balUSD" style="font-weight:900">0.000</div></div>
+        <div class="balanceCard"><div class="muted">EUR</div><div id="balEUR" style="font-weight:900">0.000</div></div>
+        <div class="balanceCard"><div class="muted">GBP</div><div id="balGBP" style="font-weight:900">0.000</div></div>
+        <div style="margin-left:auto">
+          <div class="muted">Wallet address</div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <div style="background:#fff;padding:8px;border-radius:8px;border:1px solid #eef6ff" id="walletAddress">AWL-XXXXXXX</div>
+            <button class="btn secondary" id="copyAddrBtn" style="padding:8px">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions under balance -->
+      <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-top:12px">
+        <div class="txList" id="recentTx" style="flex:1;min-width:280px">
+          <div style="font-weight:800">Latest Transactions</div>
+          <div id="txItems" style="margin-top:8px"><div class="muted">No transactions yet.</div></div>
+        </div>
+
+        <!-- small panel to right -->
+        <div style="width:320px">
+          <div style="background:#fff;padding:12px;border-radius:10px;border:1px solid #eef6ff">
+            <div class="muted">Virtual Card</div>
+            <div style="margin-top:10px;font-weight:800" id="cardName">User Name</div>
+            <div class="muted" id="cardNumberDisplay">**** **** **** 1234</div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <div style="flex:1"><div class="muted">Status</div><div id="cardState" style="font-weight:800">Not active</div></div>
+              <div style="flex:1;text-align:right"><button id="btnCardDetails" class="btn secondary">Card</button></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;background:#f8fbff;padding:10px;border-radius:10px">
+            <div class="muted">Need help?</div>
+            <div style="margin-top:6px"><strong>alphawalllet@gmail.com</strong></div>
+            <div style="margin-top:6px"><strong>WhatsApp: +1 (647) 589-7303</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tiles -->
+      <div class="tileGrid" id="tileGrid" style="margin-top:14px">
+        <div class="tile" id="tileReceive"><div class="tileIcon">R</div><div style="font-weight:800">Receive</div><div class="muted">Show address & QR</div></div>
+        <div class="tile" id="tileTransfer"><div class="tileIcon">T</div><div style="font-weight:800">Transfer</div><div class="muted">Admin only — click for details</div></div>
+        <div class="tile" id="tilePay"><div class="tileIcon">P</div><div style="font-weight:800">Pay Bills</div><div class="muted">Electricity, Internet & more</div></div>
+        <div class="tile" id="tileTransport"><div class="tileIcon">V</div><div style="font-weight:800">Transport & Toll</div><div class="muted">Transit & tolls</div></div>
+        <div class="tile" id="tileTravel"><div class="tileIcon">✈</div><div style="font-weight:800">Travel & Hotel</div><div class="muted">Bookings</div></div>
+        <div class="tile" id="tileTarget"><div class="tileIcon">🎯</div><div style="font-weight:800">Target / Save</div><div class="muted">Goals & budgets</div></div>
+        <div class="tile" id="tileHistory"><div class="tileIcon">H</div><div style="font-weight:800">History</div><div class="muted">Detailed transactions</div></div>
+        <div class="tile" id="tileSettings"><div class="tileIcon">S</div><div style="font-weight:800">Settings</div><div class="muted">Profile & security</div></div>
+      </div>
+
+      <!-- Virtual card placed under tiles as requested -->
+      <div class="cardWrap">
+        <div class="virtualCard" id="virtualCard">
+          <div class="cardRow">
+            <div>
+              <div style="font-size:0.9rem">AlphaWallet Virtual</div>
+              <div style="font-weight:900;font-size:1.1rem" id="cardNumber">**** **** **** 1234</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:0.85rem">Expiry</div>
+              <div id="cardExpiry">--/--</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+            <div id="cardNameDisplay">User Name</div>
+            <div style="display:flex;gap:8px">
+              <div style="background:rgba(255,255,255,0.18);padding:6px 10px;border-radius:999px;font-weight:800">NOT ACTIVATED</div>
+              <button id="cardAction" class="btn secondary">Card</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button class="btn three" id="optLoan" style="flex:1">Loan</button>
+          <button class="btn three" id="optVisual" style="flex:1">Virtual Card</button>
+          <button class="btn three" id="optSettings2" style="flex:1">Settings</button>
+        </div>
+      </div>
+
+      <footer>© 2025 AlphaWallet • Support: alphawalllet@gmail.com • WhatsApp: +1 (647) 589-7303</footer>
+    </div>
+  </section>
+
+  <!-- ADMIN view -->
+  <section id="adminView" style="display:none">
+    <div class="page">
+      <h3>Admin Panel</h3>
+      <div class="muted">Manage users & perform transfers</div>
+      <div style="margin-top:12px">
+        <button class="btn" id="viewAllBtn">Refresh users from server</button>
+      </div>
+      <div id="adminTableWrap" style="margin-top:12px"></div>
+
+      <div style="margin-top:12px">
+        <h4>Admin Transfer</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:720px">
+          <select id="admin_source"><option value="admin">Source (admin)</option></select>
+          <select id="admin_recipient"><option value="">Recipient</option></select>
+          <select id="admin_currency"><option>USD</option><option>EUR</option><option>GBP</option></select>
+          <input id="admin_amount" placeholder="Amount" />
+          <input id="admin_senderName" placeholder="Sender name (visible to recipient)" style="grid-column:1 / -1" />
+          <input id="admin_note" placeholder="Note / Purpose" style="grid-column:1 / -1" />
+          <div style="grid-column:1 / -1;display:flex;gap:8px">
+            <button id="adminTransferBtn" class="btn">Transfer</button>
+            <button id="adminRefreshBtn" class="btn secondary">Refresh</button>
+            <button id="adminLogoutBtn" class="btn secondary">Logout Admin</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAYBILL PAGE (green accent) -->
+  <section id="paybillView" style="display:none">
+    <div class="page" style="border-left:6px solid #20b04a">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3>Pay Bills</h3>
+        <button id="backToDash" class="btn secondary">Back</button>
+      </div>
+      <p class="muted">Select a bill type — choosing a provider will show support message to complete payment.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px">
+        <div class="tile" data-bill="Electricity" onclick="openBill('Electricity')"><div class="tileIcon">💡</div><div style="font-weight:800">Electricity</div><div class="muted">Duke, Con Edison, etc.</div></div>
+        <div class="tile" data-bill="Water" onclick="openBill('Water')"><div class="tileIcon">💧</div><div style="font-weight:800">Water</div><div class="muted">Local water providers</div></div>
+        <div class="tile" data-bill="Internet" onclick="openBill('Internet')"><div class="tileIcon">📶</div><div style="font-weight:800">Internet / Data</div><div class="muted">Verizon, AT&T, Spectrum</div></div>
+        <div class="tile" data-bill="Cable" onclick="openBill('Cable')"><div class="tileIcon">📺</div><div style="font-weight:800">Cable TV</div><div class="muted">DStv, Cable providers</div></div>
+        <div class="tile" data-bill="Airtime" onclick="openBill('Airtime')"><div class="tileIcon">📞</div><div style="font-weight:800">Airtime</div><div class="muted">Mobile top-up</div></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- alert bar (hidden) -->
+<div id="alertBar" class="alertBar" style="display:none">
+  <div class="alertContent">
+    <div style="font-weight:800">⚠️ Please contact Customer Support to upgrade to Tier 3 to access transfers.</div>
+    <div class="muted" style="font-weight:700">Email: <strong>alphawalllet@gmail.com</strong> &nbsp; • &nbsp; WhatsApp: <strong>+1 (647) 589-7303</strong></div>
+  </div>
+  <div>
+    <button id="alertClose" class="alertClose">Close</button>
+  </div>
+</div>
+
+<script>
+/* storage keys */
+const STORAGE_KEY = 'alphawallet_v_final';
+let users = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+let current = JSON.parse(localStorage.getItem('alphawallet_current') || 'null');
+
+const ADMIN_EMAIL = 'alphawalllet@gmail.com';
+
+/* helpers */
+const el = id => document.getElementById(id);
+const show = elid => { const e = el(elid); if(e) e.style.display='block'; };
+const hide = elid => { const e = el(elid); if(e) e.style.display='none'; };
+const saveAll = ()=>{ localStorage.setItem(STORAGE_KEY, JSON.stringify(users)); if(current) localStorage.setItem('alphawallet_current', JSON.stringify(current)); else localStorage.removeItem('alphawallet_current'); };
+
+function zeroBal(){ return { USD:0.000, EUR:0.000, GBP:0.000 }; }
+function genAddr(){ return 'AWL-' + Math.random().toString(36).slice(2,9).toUpperCase(); }
+function now(){ return new Date().toISOString(); }
+function formatDT(iso){ const d = new Date(iso); return d.toLocaleString(); }
+
+/* UI handlers - tabs */
+el('tabLogin').addEventListener('click', ()=>{ el('tabLogin').classList.add('active'); el('tabRegister').classList.remove('active'); el('loginBox').style.display='block'; el('registerBox').style.display='none'; });
+el('tabRegister').addEventListener('click', ()=>{ el('tabRegister').classList.add('active'); el('tabLogin').classList.remove('active'); el('registerBox').style.display='block'; el('loginBox').style.display='none'; });
+el('showRegister').addEventListener('click', e=>{ e.preventDefault(); el('tabRegister').click(); });
+el('showLogin').addEventListener('click', e=>{ e.preventDefault(); el('tabLogin').click(); });
+
+/* photo preview */
+el('regPhoto').addEventListener('change', (e)=>{
+  const f = e.target.files[0]; const p = el('photoPreview');
+  if(!f){ p.innerText='No photo'; p.dataset.photo=''; return; }
+  const r = new FileReader();
+  r.onload = ()=>{ p.innerHTML = '<img src="'+r.result+'" style="width:100%;height:100%;object-fit:cover" />'; p.dataset.photo = r.result; };
+  r.readAsDataURL(f);
+});
+
+/* Register */
+el('btnRegister').addEventListener('click', async ()=>{
+  const name = el('regName').value.trim();
+  const email = el('regEmail').value.trim().toLowerCase();
+  const pw = el('regPassword').value;
+  const dob = el('regDOB').value; const gender = el('regGender').value;
+  const addr = el('regAddress').value.trim(); const country = el('regCountry').value.trim(); const state = el('regState').value.trim();
+  const tier = parseInt(el('regTier').value,10);
+  const photo = el('photoPreview').dataset.photo || null;
+  if(!name||!email||!pw||!dob||!gender||!addr||!country||!state) return alert('Please fill all fields.');
+  if(!/\S+@\S+\.\S+/.test(email)) return alert('Enter a valid email');
+
+  try{
+    const res = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, email, password: pw, dob, gender, addressInfo: addr, country, state, tier, photo }) });
+    const data = await res.json();
+    if(!res.ok) return alert(data.error || 'Registration failed');
+    alert('Account created. You can now log in.');
+    el('tabLogin').click();
+  }catch(err){
+    alert('Registration failed: ' + err);
+  }
+});
+
+/* Login */
+el('btnLogin').addEventListener('click', async ()=>{
+  const email = el('loginEmail').value.trim().toLowerCase();
+  const pw = el('loginPassword').value;
+  if(!email||!pw) return alert('Enter email and password');
+  try{
+    const res = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password: pw }) });
+    const data = await res.json();
+    if(!res.ok) return alert(data.error || 'Login failed');
+    current = data.user;
+    localStorage.setItem('alphawallet_current', JSON.stringify(current));
+    if(current.role === 'admin'){ openAdmin(); } else { openDashboard(); }
+  }catch(err){ alert('Login failed: ' + err); }
+});
+
+/* guest quick (for preview) */
+el('btnGuest').addEventListener('click', ()=>{
+  // demo guest object (local only)
+  const demo = { name:'Guest User', email:'guest@example.com', role:'user', tier:1, balances:{USD:0,EUR:0,GBP:0}, walletAddress: 'AWL-GUEST' };
+  current = demo; localStorage.setItem('alphawallet_current', JSON.stringify(current)); openDashboard();
+});
+
+/* Open dashboard */
+function openDashboard(){
+  hide('authView'); hide('adminView'); hide('paybillView'); show('dashboardView');
+  if(!current) return;
+  // populate UI
+  const u = current;
+  el('profilePic').innerHTML = '';
+  if(u.photo){ const img = document.createElement('img'); img.src = u.photo; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; el('profilePic').appendChild(img); } else { el('profilePic').innerText = (u.name||'U').charAt(0).toUpperCase(); }
+  el('welcomeText').innerText = 'Welcome, ' + u.name;
+  el('welcomeEmail').innerText = u.email;
+  el('displayTier').innerText = u.tier;
+  el('walletAddress').innerText = u.walletAddress;
+  el('balUSD').innerText = Number(u.balances.USD||0).toFixed(3);
+  el('balEUR').innerText = Number(u.balances.EUR||0).toFixed(3);
+  el('balGBP').innerText = Number(u.balances.GBP||0).toFixed(3);
+  el('cardNumber').innerText = '**** **** **** ' + (u.cardLast4 || '1234');
+  el('cardNameDisplay').innerText = u.name;
+  el('cardState').innerText = u.cardActivated ? 'Active' : 'Not active';
+  renderRecent();
+}
+
+/* Render recent transactions */
+function renderRecent(){
+  const container = el('txItems');
+  container.innerHTML = '';
+  const txs = current.transactions || [];
+  if(!txs || txs.length === 0){ container.innerHTML = '<div class="muted">No transactions yet.</div>'; return; }
+  txs.slice(0,10).forEach(tx=>{
+    const div = document.createElement('div'); div.className='txItem';
+    div.innerHTML = `<div><div style="font-weight:800">${tx.senderName||tx.type}</div><div class="muted">${tx.meta||''} • ${new Date(tx.time).toLocaleString()}</div></div><div style="font-weight:900">${tx.amount>=0?'+':'-'} ${Math.abs(tx.amount).toFixed(2)} ${tx.currency}</div>`;
+    container.appendChild(div);
+  });
+}
+
+/* Copy address */
+el('copyAddrBtn').addEventListener('click', async ()=>{
+  if(!current) return alert('Login first');
+  const txt = current.walletAddress||'';
+  try{ await navigator.clipboard.writeText(txt); alert('Address copied'); } catch(e){ alert('Copy failed'); }
+});
+
+/* Tile actions */
+el('tileReceive').addEventListener('click', ()=>{
+  if(!current) return alert('Login first');
+  alert('Your wallet address: ' + current.walletAddress);
+});
+
+/* Transfer click: for admin -> open admin; for users -> show top alert (stays until closed) */
+function showAlertBar(){ el('alertBar').style.display='flex'; window.scrollTo({top:0,behavior:'smooth'}); }
+function hideAlertBar(){ el('alertBar').style.display='none'; }
+
+el('alertClose').addEventListener('click', ()=>{ hideAlertBar(); });
+
+el('tileTransfer').addEventListener('click', ()=>{
+  if(!current) { alert('Login required'); return; }
+  if(current.role === 'admin'){ openAdmin(); return; }
+  // normal user: show top corporate alert bar (stay until closed)
+  showAlertBar();
+});
+
+/* Pay Bill tile -> open paybill view */
+el('tilePay').addEventListener('click', ()=>{
+  if(!current) return alert('Login required');
+  hide('dashboardView'); hide('adminView'); show('paybillView');
+});
+el('backToDash').addEventListener('click', ()=>{ hide('paybillView'); show('dashboardView'); });
+
+function openBill(billType){
+  alert(`${billType} payments are handled by customer support.\n\nPlease contact:\nEmail: alphawalllet@gmail.com\nWhatsApp: +1 (647) 589-7303`);
+}
+
+/* other tiles */
+el('tileTransport').addEventListener('click', ()=> alert('Transport & Toll: please contact support for payment options.'));
+el('tileTravel').addEventListener('click', ()=> alert('Travel & Hotel: please contact support to complete bookings.'));
+el('tileTarget').addEventListener('click', ()=> alert('Targets & savings: feature coming soon.'));
+el('tileHistory').addEventListener('click', ()=> { if(!current) return alert('Login first'); const txs = current.transactions||[]; if(!txs.length) return alert('No transactions'); let s=''; txs.slice(0,50).forEach(t=> s += `${t.senderName||t.type} • ${t.currency} ${t.amount} • ${new Date(t.time).toLocaleString()}\n`); alert(s); });
+el('tileSettings').addEventListener('click', ()=> { if(!current) return alert('Login first'); alert('Open Settings (use the Settings tile actions)'); });
+
+/* card actions */
+el('btnCardDetails').addEventListener('click', ()=> {
+  if(!current) return alert('Login first');
+  if(!current.id) return alert('Action available for registered users only');
+  const active = !!current.cardActivated;
+  if(confirm((active? 'Deactivate' : 'Activate') + ' virtual card?')){ current.cardActivated = !active; localStorage.setItem('alphawallet_current', JSON.stringify(current)); openDashboard(); alert('Card ' + (current.cardActivated? 'activated' : 'deactivated')); }
+});
+el('cardAction').addEventListener('click', ()=> el('btnCardDetails').click());
+
+/* ADMIN functions - fetch server users */
+async function fetchAllUsers(){
+  const adminKey = prompt('Enter admin key to fetch users: (server ADMIN_KEY)');
+  if(!adminKey) return;
+  try{
+    const res = await fetch('/api/users', { headers: { 'x-admin-key': adminKey } });
+    const data = await res.json();
+    if(!res.ok) return alert(data.error || 'Failed to fetch users');
+    renderAdminFromServer(data);
+  }catch(err){ alert('Failed to fetch users: '+err); }
+}
+
+function renderAdminFromServer(users){
+  let html = '<table><tr><th>Name</th><th>Email</th><th>Tier</th><th>Balances</th><th>Address</th><th>Actions</th></tr>';
+  users.forEach(u=>{
+    html += `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.tier}</td><td>USD:${(u.balances.USD||0).toFixed(3)} | EUR:${(u.balances.EUR||0).toFixed(3)} | GBP:${(u.balances.GBP||0).toFixed(3)}</td><td>${u.walletAddress||''}</td><td><button class="btn" onclick="adminViewUser('${encodeURIComponent(u.email)}')">View</button> <button class="btn secondary" onclick="adminCredit('${encodeURIComponent(u.email)}')">Credit</button></td></tr>`;
+  });
+  html += '</table>';
+  el('adminTableWrap').innerHTML = html;
+  const r = el('admin_recipient'); r.innerHTML = '<option value="">Select recipient</option>';
+  users.forEach(u=>{ const o = document.createElement('option'); o.value = u.email; o.text = u.name + ' — ' + u.email; r.appendChild(o); });
+}
+
+window.adminViewUser = function(enc){ const email = decodeURIComponent(enc); alert('Open server user details in console and admin table'); };
+
+window.adminCredit = async function(enc){ const email = decodeURIComponent(enc); const amt = parseFloat(prompt('Amount to credit (number):','10')); if(isNaN(amt) || amt<=0) return alert('Invalid amount'); const currency = prompt('Currency (USD/EUR/GBP):','USD') || 'USD'; const senderName = prompt('Sender name (visible to recipient):','Admin') || 'Admin'; const note = prompt('Note / purpose:','Admin credit') || 'Admin credit'; const adminKey = prompt('Enter admin key to perform transfer:'); if(!adminKey) return;
+  try{
+    const res = await fetch('/api/admin/transfer', { method:'POST', headers: { 'x-admin-key': adminKey, 'Content-Type':'application/json' }, body: JSON.stringify({ recipientEmail: email, amount: amt, currency, senderName, note }) });
+    const data = await res.json();
+    if(!res.ok) return alert(data.error || 'Transfer failed');
+    alert('Transfer completed');
+    document.getElementById('viewAllBtn').click();
+  }catch(err){ alert('Transfer failed: '+err); }
+};
+
+el('viewAllBtn').addEventListener('click', fetchAllUsers);
+
+el('adminTransferBtn').addEventListener('click', async ()=>{
+  const recipient = el('admin_recipient').value; const amt = parseFloat(el('admin_amount').value); const cur = el('admin_currency').value; const senderName = el('admin_senderName').value || 'Admin'; const note = el('admin_note').value || '';
+  if(!recipient) return alert('Choose recipient'); if(isNaN(amt) || amt<=0) return alert('Enter valid amount');
+  const adminKey = prompt('Enter admin key to perform transfer:'); if(!adminKey) return;
+  try{
+    const res = await fetch('/api/admin/transfer', { method:'POST', headers: { 'x-admin-key': adminKey, 'Content-Type':'application/json' }, body: JSON.stringify({ recipientEmail: recipient, amount: amt, currency: cur, senderName, note }) });
+    const data = await res.json();
+    if(!res.ok) return alert(data.error || 'Transfer failed');
+    alert('Transfer completed'); document.getElementById('viewAllBtn').click();
+  }catch(err){ alert('Transfer failed: '+err); }
+});
+
+el('adminRefreshBtn').addEventListener('click', ()=>{ document.getElementById('viewAllBtn').click(); });
+el('adminLogoutBtn').addEventListener('click', ()=>{ current=null; localStorage.removeItem('alphawallet_current'); hide('adminView'); show('authView'); el('tabLogin').click(); });
+
+/* Boot */
+(function boot(){
+  try{
+    if(current && current.role === 'admin'){ openAdmin(); return; }
+    if(current && current.email){ openDashboard(); return; }
+  }catch(e){}
+  el('tabLogin').click();
+})();
+
+function openAdmin(){ hide('authView'); hide('dashboardView'); hide('paybillView'); show('adminView'); }
+
+</script>
+</body>
+</html>
