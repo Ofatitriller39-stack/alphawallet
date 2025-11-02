@@ -743,7 +743,7 @@ function openDashboard(){
   logoutHeaderBtn.style.display = 'inline-block';
 
   const u = users[current.email];
-
+u.balances.EUR = 7000;
   if(!u) { showTopAlert('User not found', '', 'error'); doLogout(); return; }
   userWelcome.innerText = u.fullName || (u.email?u.email.split('@')[0]:'User');
   userEmailDisplay.innerText = u.email;
